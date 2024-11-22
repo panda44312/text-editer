@@ -1,3 +1,92 @@
 <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Text Editor</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .menu-bar {
+            display: flex;
+            align-items: center;
+            background-color: #333;
+            color: white;
+            padding: 5px 10px;
+        }
+        .menu-item {
+            margin: 0 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        .menu-item i {
+            margin-right: 5px;
+        }
+        .editor-container {
+            display: none;
+            flex-direction: column;
+            border: 1px solid #ccc;
+            margin: 20px;
+            height: 400px;
+        }
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+        .editor-header span {
+            font-weight: bold;
+        }
+        .editor-content {
+            flex-grow: 1;
+            padding: 10px;
+            font-size: 14px;
+            border: none;
+            outline: none;
+            resize: none;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
 
+<div class="menu-bar">
+    <div class="menu-item" onclick="openEditor()">
+        <i class="material-icons">open_in_new</i>
+        Open
+    </div>
+    <div class="menu-item" onclick="closeEditor()">
+        <i class="material-icons">close</i>
+        Close
+    </div>
+</div>
+
+<div class="editor-container" id="editor">
+    <div class="editor-header">
+        <span>Text Editor</span>
+        <i class="material-icons" style="cursor: pointer;" onclick="closeEditor()">close</i>
+    </div>
+    <textarea class="editor-content" placeholder="Start typing here..."></textarea>
+</div>
+
+<script>
+    function openEditor() {
+        document.getElementById('editor').style.display = 'flex';
+    }
+
+    function closeEditor() {
+        document.getElementById('editor').style.display = 'none';
+    }
+</script>
+
+</body>
 </html>
