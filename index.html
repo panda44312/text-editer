@@ -1,53 +1,99 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Text Editor</title>
+    <title>文本编辑器</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
+        :root {
+            --theme-color: #0078d4;
+            --bg-color: #fff;
+            --editor-bg-color: #fff;
+            --editor-text-color: #333;
+            --font-size: 16px;
+            --line-height: 1.5;
+        }
+
         body {
             margin: 0;
             font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             height: 100vh;
+            background-color: var(--bg-color);
+            transition: background-color 0.3s;
         }
+
         .menu-bar {
             display: flex;
             align-items: center;
-            background-color: #0078d4;
+            background-color: var(--theme-color);
             color: white;
             padding: 10px 20px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
+
         .menu-item {
             margin-right: 20px;
             cursor: pointer;
             display: flex;
             align-items: center;
         }
+
         .menu-item i {
             margin-right: 8px;
         }
+
         .menu-item:hover {
             text-decoration: underline;
         }
+
+        .settings-panel {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            background-color: #fff;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            width: 200px;
+            display: none;
+        }
+
+        .settings-header {
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .settings-content {
+            margin-top: 10px;
+        }
+
+        .settings select, .settings input {
+            width: 100%;
+            padding: 5px;
+            margin: 10px 0;
+        }
+
         .editor-content {
             flex-grow: 1;
             width: 100%;
             padding: 20px;
-            font-size: 16px;
-            line-height: 1.5;
+            font-size: var(--font-size);
+            line-height: var(--line-height);
             border: none;
             outline: none;
             resize: none;
             box-sizing: border-box;
             font-family: 'Courier New', Courier, monospace;
+            background-color: var(--editor-bg-color);
+            color: var(--editor-text-color);
         }
+
         .status-bar {
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
             align-items: center;
             padding: 10px 20px;
             background-color: #f7f9fc;
@@ -62,58 +108,139 @@
 <div class="menu-bar">
     <div class="menu-item" onclick="openFile()">
         <i class="material-icons">folder_open</i>
-        Open File
+        打开文件
     </div>
     <div class="menu-item" onclick="saveFile()">
         <i class="material-icons">save</i>
-        Save File
+        保存文件
+    </div>
+    <div class="menu-item" onclick="createNewFile()">
+        <i class="material-icons">add</i>
+        创建新文件
+    </div>
+    <div class="menu-item" onclick="toggleSettingsPanel()">
+        <i class="material-icons">settings</i>
+        设置
     </div>
 </div>
 
-<textarea id="editorContent" class="editor-content" placeholder="Start typing here..." oninput="updateWordCount()"></textarea>
+<textarea id="editorContent" class="editor-content" placeholder="在此处输入文本..." oninput="updateWordCount()"></textarea>
 
-<div class="status-bar" id="statusBar">
-    Word count: 0
+<div class="status-bar">
+    <span id="statusBar">字数统计：0</span>
+</div>
+
+<div class="settings-panel" id="settingsPanel">
+    <div class="settings-header" onclick="toggleSettingsPanel()">设置面板</div>
+    <div class="settings-content">
+        <label for="themeColor">主题色：</label>
+        <input type="color" id="themeColor" value="#0078d4" onchange="changeThemeColor(event)">
+
+        <label for="fontSize">字体大小：</label>
+        <select id="fontSize" onchange="changeFontSize()">
+            <option value="16px">16px</option>
+            <option value="18px">18px</option>
+            <option value="20px">20px</option>
+        </select>
+
+        <label for="bgColor">编辑器背景颜色：</label>
+        <input type="color" id="bgColor" value="#ffffff" onchange="changeEditorBgColor(event)">
+    </div>
 </div>
 
 <script>
-    const editor = document.getElementById('editorContent');
-    const statusBar = document.getElementById('statusBar');
+    let fileHandle = null;
 
+    // 更新字数统计
     function updateWordCount() {
-        const text = editor.value.trim();
+        const text = document.getElementById('editorContent').value.trim();
         const wordCount = text ? text.split(/\s+/).length : 0;
-        statusBar.textContent = `Word count: ${wordCount}`;
+        document.getElementById('statusBar').textContent = `字数统计：${wordCount}`;
     }
 
-    function openFile() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.txt';
-        input.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    editor.value = reader.result;
-                    updateWordCount();
-                };
-                reader.readAsText(file);
+    // 打开本地文件
+    async function openFile() {
+        try {
+            [fileHandle] = await window.showOpenFilePicker({
+                types: [{ description: '文本文件', accept: { 'text/plain': ['.txt'] } }]
+            });
+            const file = await fileHandle.getFile();
+            const content = await file.text();
+            document.getElementById('editorContent').value = content;
+            updateWordCount();
+        } catch (error) {
+            console.error('文件打开失败:', error);
+        }
+    }
+
+    // 保存文件到本地
+    async function saveFile() {
+        try {
+            if (!fileHandle) {
+                alert('请先打开一个文件');
+                return;
             }
-        });
-        input.click();
+            const writable = await fileHandle.createWritable();
+            const content = document.getElementById('editorContent').value;
+            await writable.write(content);
+            await writable.close();
+            alert('文件已保存！');
+        } catch (error) {
+            console.error('文件保存失败:', error);
+        }
     }
 
-    function saveFile() {
-        const content = editor.value;
-        const blob = new Blob([content], { type: 'text/plain' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'file.txt';
-        a.click();
-        URL.revokeObjectURL(a.href);
-        alert('File saved successfully!');
+    // 创建新文件
+    function createNewFile() {
+        document.getElementById('editorContent').value = '';
+        updateWordCount();
+        fileHandle = null;
     }
+
+    // 切换设置面板显示
+    function toggleSettingsPanel() {
+        const panel = document.getElementById('settingsPanel');
+        panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+    }
+
+    // 改变主题色
+    function changeThemeColor(event) {
+        const color = event.target.value;
+        document.documentElement.style.setProperty('--theme-color', color);
+        localStorage.setItem('themeColor', color);
+    }
+
+    // 改变字体大小
+    function changeFontSize() {
+        const fontSize = document.getElementById('fontSize').value;
+        document.documentElement.style.setProperty('--font-size', fontSize);
+        localStorage.setItem('fontSize', fontSize);
+    }
+
+    // 改变编辑器背景色
+    function changeEditorBgColor(event) {
+        const color = event.target.value;
+        document.documentElement.style.setProperty('--editor-bg-color', color);
+        localStorage.setItem('editorBgColor', color);
+    }
+
+    // 初始化设置
+    function loadSettings() {
+        const themeColor = localStorage.getItem('themeColor') || '#0078d4';
+        const fontSize = localStorage.getItem('fontSize') || '16px';
+        const editorBgColor = localStorage.getItem('editorBgColor') || '#ffffff';
+
+        document.documentElement.style.setProperty('--theme-color', themeColor);
+        document.documentElement.style.setProperty('--font-size', fontSize);
+        document.documentElement.style.setProperty('--editor-bg-color', editorBgColor);
+
+        document.getElementById('themeColor').value = themeColor;
+        document.getElementById('fontSize').value = fontSize;
+        document.getElementById('bgColor').value = editorBgColor;
+    }
+
+    // 页面加载时应用设置
+    window.onload = loadSettings;
 </script>
 
 </body>
